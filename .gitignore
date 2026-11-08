@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Node dependencies
+node_modules/
+.vite-temp/
+
+# Webapp dynamic runtime data
+webapp/jobs/
+webapp/audit.log
+*.log
+
+# Temp files
+*.tmp
+.DS_Store
+Thumbs.db
