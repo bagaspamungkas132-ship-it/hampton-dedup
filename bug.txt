@@ -1,0 +1,28 @@
+Ada bug di webapp Hampton Dedup (folder webapp). App berjalan di CML dan diakses lewat path proxy:
+https://<host>.apps.cml.ocbcnisp.com/proxy/8100/
+
+Gejala:
+- Login gagal dengan pesan "Terjadi kesalahan (HTTP 405)".
+- Console browser: GET /api/me -> 404 dan POST /api/login -> 405.
+- Request URL yang terlihat: https://<host>.apps.cml.ocbcnisp.com/api/login (tanpa /proxy/8100/).
+
+Penyebab:
+Frontend memanggil API dengan path absolut (diawali "/"), misalnya fetch('/api/login'). Browser mengirimnya ke root domain, bukan ke /proxy/8100/, sehingga ditangani gateway CML dan bukan app kita.
+
+Yang harus diperbaiki:
+1. Cari semua pemanggilan fetch/XHR/axios di frontend (index.html dan file .js di folder webapp) yang memakai path absolut, lalu ubah jadi path relatif tanpa "/" di depan. Contoh:
+   - fetch('/api/login')  ->  fetch('api/login')
+   - fetch('/api/me')     ->  fetch('api/me')
+   Termasuk semua endpoint lain (upload, download, hasil dedup, dll).
+2. Periksa juga referensi aset yang memakai path absolut (/static/..., /assets/..., <script src="/...">, <link href="/...">, redirect window.location = '/...') dan ubah jadi relatif.
+3. Kalau memakai bundler (Vite/React), set base path relatif (misalnya base: './').
+4. Di backend, pastikan:
+   - app listen di 0.0.0.0 dan port dari os.environ['CDSW_APP_PORT'] (8100);
+   - route /api/login menerima method POST dan /api/me tersedia;
+   - kalau backend membuat redirect atau URL absolut, tidak menghapus prefix /proxy/8100/.
+5. Jangan ubah logika dedup, autentikasi, atau data. Hanya perbaiki path.
+
+Verifikasi:
+- Restart app di CML, buka di browser dengan Ctrl+F5.
+- Di DevTools > Network, Request URL untuk login harus berisi /proxy/8100/api/login dan statusnya bukan 404/405.
+- Tampilkan ringkasan file dan baris yang diubah.
